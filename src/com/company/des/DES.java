@@ -8,29 +8,19 @@ import java.math.BigInteger;
  */
 
 public class DES {
-    private static BitArray key = new BitArray("0110101101100101011110010110101101100101011110010110101101101011");
+    private BitArray key = new BitArray("0110011010100101000011111101001010000101011110010100111111101011");
 
     public DES() {
     }
 
-    private BitArray[] keys;
-    {
-        keys = new BitArray[16];
-        BitArray key1 = new BitArray(key);
-        BitArray[] blockOfKeys = getBlockOfKeys(key1);
-        for(int i = 0; i < 16; i++) {
-            BitArray roundKey = getRoundKey(blockOfKeys, i + 1);
-            keys[i] = roundKey;
-        }
+    private BitArray[] keys = updateKey();
 
-    }
 
     public BitArray encrypt(BitArray data) {
         if (data.size() != 64) throw new IllegalArgumentException("block should be 64 bits");
 
         data = initialPermutation(data);
 
-        BitArray[] arrays = getBlockOfKeys(key);
         BitArray result = feistel(data, false);
 
         return finalPermutation(result);
@@ -41,10 +31,31 @@ public class DES {
 
         data = initialPermutation(data);
 
-        BitArray[] arrays = getBlockOfKeys(key);
         BitArray result = feistel(data, true);
 
         return finalPermutation(result);
+    }
+
+    public BitArray getKey() {
+        return new BitArray(key);
+    }
+
+    public void setKey(BitArray key) {
+        if(key.size() != 64) throw new IllegalArgumentException("size of key should be 64");
+        this.key = key;
+        keys = updateKey();
+    }
+
+    private BitArray[] updateKey() {
+        BitArray[] keys;
+        keys = new BitArray[16];
+        BitArray key1 = new BitArray(key);
+        BitArray[] blockOfKeys = getBlockOfKeys(key1);
+        for(int i = 0; i < 16; i++) {
+            BitArray roundKey = getRoundKey(blockOfKeys, i + 1);
+            keys[i] = roundKey;
+        }
+        return keys;
     }
 
     private BitArray feistel(BitArray data, boolean reverse) {
@@ -66,7 +77,6 @@ public class DES {
             for (int i = 0; i < rounds; i++) {
                 BitArray temp = new BitArray(left);
                 left = new BitArray(right);
-                //right = temp.XOR(func_feistel(new BitArray(right), getRoundKey(roundKey, round, true)));
                 right = temp.XOR(func_feistel(new BitArray(right), keys[i]));
                 round++;
             }
@@ -78,7 +88,6 @@ public class DES {
             for (int i = 0; i < 16; i++) {
                 BitArray temp = new BitArray(left);
                 left = new BitArray(right);
-                //right = temp.XOR(func_feistel(new BitArray(right), getRoundKey(roundKey, round, false)));
                 right = temp.XOR(func_feistel(new BitArray(right), keys[round]));
                 round--;
             }
@@ -87,17 +96,7 @@ public class DES {
             right = tmp;
         }
 
-        BitArray result = new BitArray(64);
-
-        for (int i = 0; i < 64; i++) {
-            if (i < 32) {
-                result.setBit(i, left.getBit(i));
-            } else {
-                result.setBit(i, right.getBit(i - 32));
-            }
-        }
-
-        return result;
+        return merge(64,left,right);
 
     }
 
@@ -203,6 +202,16 @@ public class DES {
     }
 
     /**
+     * Permutation with key and delete 8,16,24...64 bit
+     * @param key block of 64 bit
+     * @return block of 56 bit
+     */
+    private BitArray permutationKey(BitArray key) {
+        if(key.size() != 64) throw new IllegalArgumentException("expected block of 64 bits");
+        return permutation(key,Table.PERMUTATION_FOR_EXTENDED_KEY,56);
+    }
+
+    /**
      * @param bitArray block of 48 bits
      * @return 8 arrays 6 bits each
      */
@@ -224,7 +233,7 @@ public class DES {
      */
     private BitArray[] getBlockOfKeys(BitArray key) {
         if (key.size() != 64) throw new IllegalArgumentException("expected size of key 64");
-        key = permutationKey(key, Table.PERMUTATION_FOR_EXTENDED_KEY);
+        key = permutationKey(key);
 
         BitArray blockC = new BitArray(28);
         BitArray blockD = new BitArray(28);
@@ -275,8 +284,5 @@ public class DES {
         return out;
     }
 
-    private BitArray permutationKey(BitArray key, int[] table) {
-        return permutation(key,table,56);
-    }
 
 }

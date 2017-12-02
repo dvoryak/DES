@@ -8,7 +8,8 @@ public class Main {
     public static void main(String[] args) {
 	// write your code here
         DES des = new DES();
-        String message = "0110010101100010011000010110000101100001011000010110000101100001";
+        String message = "0110100101110100001000000111011101101111011100100110101101110011";
+        des.setKey(new BitArray(64));
         BitArray encrypt = des.encrypt(new BitArray(message));
         BitArray decrypt = des.decrypt(encrypt);
         System.out.println("message : " + message );
