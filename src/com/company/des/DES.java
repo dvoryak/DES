@@ -158,7 +158,7 @@ public class DES {
     /**
      * @param data  block of bits
      * @param table permutations table
-     * @return table block of bits same size with initial block
+     * @return table block of bit [size]
      */
     private BitArray permutation(BitArray data, int[] table, int size) {
         BitArray out = new BitArray(size);
